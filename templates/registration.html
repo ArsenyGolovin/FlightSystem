@@ -5,18 +5,21 @@
     <title>Регистрация</title>
 </head>
 <body>
-<form>
+{{ form.hidden_tag() }}
+<form action="post" novalidate>
     <h2>Регистрация</h2>
-    <a href="/login">Войти</a> в систему
+    <p><a href="/login">Войти</a> в систему</p>
     <div>
-        <input placeholder="ФИО"><br>
+        {{ form.username.label }}<br>
+        {{ form.username(class="form-control") }}<br>
+        <!--<input placeholder="ФИО"><br>
         <input type="email" placeholder="Почта"><br>
         <input placeholder="Логин"><br>
         <input type="password" placeholder="Пароль"><br>
         <input type="password" placeholder="Подтверждение пароля"><br>
         <input type="radio" name="user_type" value="client" id="1"><label for="1">Клиент</label><br>
         <input type="radio" name="user_type" value="manager" id="2"><label for="2">Управляющий</label><br>
-        <button type="submit">Готово</button>
+        <button type="submit">Готово</button>-->
     </div>
 </form>
 </body>
