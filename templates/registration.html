@@ -1,21 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-{{ form.hidden_tag() }}
-<form action="" method="post" novalidate>
+<form method="post">
     <h2>Регистрация</h2>
     <p><a href="/login">Войти</a> в систему</p>
     <div>
-        {{ form.username.label }}<br>
-        {{ form.username(class="form-control") }}<br>
+        {{ form.csrf_token() }}
+        {{ form.name.label }}<br>
+        {{ form.name(class="form-control") }}<br>
         {{ form.email.label }}<br>
         {{ form.email(class="form-control", type="email") }}<br>
         {{ form.password.label }}<br>
-        {{ form.password(class="form-control", type="password") }}<br>
+        {{ form.password(class="form-control", type="password", id="pass1") }}<br>
         {{ form.password2.label }}<br>
-        {{ form.password(class="form-control", type="password2") }}<br>
-        {{ form.client_type }}
-        {{ form.submit }}
+        {{ form.password2(class="form-control", type="password", id="pass2") }}<br>
+        {{ form.user_type.label }}<br>
+        {{ form.user_type(type="radio") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}<br>
     </div>
 </form>
 {% endblock %}
