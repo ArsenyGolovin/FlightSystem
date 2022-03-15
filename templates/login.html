@@ -1,21 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Вход</title>
-</head>
-<body>
-<form>
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post">
     <h2>Вход</h2>
-    <a href="/registration">Зарегистрироваться</a>
+    <p><a href="/registration">Зарегистрироваться</a></p>
     <div>
-        <input placeholder="Логин"><br>
-        <input type="password" placeholder="Пароль"><br>
-        <input type="radio" name="user_type" value="client" id="1"><label for="1">Клиент</label><br>
-        <input type="radio" name="user_type" value="manager" id="2"><label for="2">Управляющий
-            (при регистрации как управляющий)</label><br>
-        <button type="submit">Готово</button>
+        {{ form.csrf_token() }}
+        {{ form.email.label }}<br>
+        {{ form.email(class="form-control", type="email") }}<br>
+        {{ form.password.label }}<br>
+        {{ form.password(class="form-control", type="password", id="pass") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}
     </div>
 </form>
-</body>
-</html>
+{% endblock %}
