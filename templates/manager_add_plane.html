@@ -1,0 +1,18 @@
+{% extends "base_manager.html" %}
+
+{% block title %}Добавить самолёт{% endblock %}
+{% block content %}
+<form method="post">
+    <h2>Добавление самолёта в базу данных</h2><br>
+    <div>
+        {{ form.csrf_token() }}
+        {{ form.name.label }}<br>
+        {{ form.name(class="form-control") }}<br>
+        {{ form.rows_num.label }}<br>
+        {{ form.rows_num(class="form-control") }}<br>
+        {{ form.columns_num.label }}<br>
+        {{ form.columns_num(class="form-control") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

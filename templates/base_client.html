@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% if current_user %}
+    {% if not current_user.is_manager %}
+        {% block content %}{% endblock %}
+    {% else %}
+        Вы должны быть зарегистрированы как клиент. <a href="/logout">Выйти из системы</a>
+    {% endif %}
+{% else %}
+    Вы не авторизованы. <a href="/registration">Зарегистрируйтесь</a> или <a href="/login">войдите</a> чтобы начать
+{% endif %}

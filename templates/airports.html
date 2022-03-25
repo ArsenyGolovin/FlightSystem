@@ -1,0 +1,18 @@
+{% extends "base_manager.html" %}
+
+{% block title %}Аэропорты{% endblock %}
+{% block content %}
+{% if current_user %}
+<p><h2>Доступные аэропорты</h2><p>
+    <table border="">
+        <tr><td><b>Город</b></td><td><b>Название</b></td></tr>
+        {% for airport in table.all() %}
+        <tr>
+            <td>{{ airport.city }}</td>
+            <td>{{ airport.name }}</td>
+        </tr>
+    {% endfor %}</table>
+{% else %}
+    Вы не авторизованы. <a href="/registration">Зарегистрируйтесь</a> или <a href="/login">войдите</a> чтобы начать
+{% endif %}
+{% endblock %}
