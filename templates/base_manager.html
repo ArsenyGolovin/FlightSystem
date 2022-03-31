@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
-{% if current_user %}
+{% if current_user.is_authenticated %}
+    {% block header %}
+        <a class="navbar navbar-light bg-light" href="/manager/airports">Аэропорты</a>
+        <a class="navbar navbar-light bg-light" href="/manager/planes">Самолёты</a>
+        <a class="navbar navbar-light bg-light" href="/manager/flights">Рейсы</a>
+    {% endblock %}
     {% if current_user.is_manager %}
         {% block content %}{% endblock %}
     {% else %}

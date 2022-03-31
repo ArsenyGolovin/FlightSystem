@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% if current_user %}
+{% if current_user.is_authenticated %}
     {% if not current_user.is_manager %}
         {% block content %}{% endblock %}
     {% else %}

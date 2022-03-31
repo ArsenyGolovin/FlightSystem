@@ -3,7 +3,8 @@
 {% block title %}Добавить самолёт{% endblock %}
 {% block content %}
 <form method="post">
-    <h2>Добавление самолёта в базу данных</h2><br>
+    <h2>Добавление самолёта в базу данных</h2>
+    <a href="/manager/planes">Доступные самолёты</a>
     <div>
         {{ form.csrf_token() }}
         {{ form.name.label }}<br>
@@ -12,6 +13,10 @@
         {{ form.rows_num(class="form-control") }}<br>
         {{ form.columns_num.label }}<br>
         {{ form.columns_num(class="form-control") }}<br>
+        {{ form.flight_cost_per_1000_km.label }}<br>
+        {{ form.flight_cost_per_1000_km(class="form-control") }}<br>
+        {{ form.average_speed.label }}<br>
+        {{ form.average_speed(class="form-control") }}<br>
         {{ form.submit(type="submit", class="btn btn-primary") }}
     </div>
 </form>

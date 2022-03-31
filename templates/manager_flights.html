@@ -1,0 +1,27 @@
+{% extends "base_manager.html" %}
+
+{% block content %}
+<p><h2>Рейсы</h2><p>
+<p><a href="./add_flight">Добавить рейс</a></p>
+    <table border="">
+        <tr>
+            <td><b>Рейс</b></td>
+            <td><b>Самолёт</b></td>
+            <td><b>Дата и время отправления</b></td>
+            <td><b>Дата и время прибытия</b></td>
+            <td><b>Цена билета</b></td>
+            <td><b>Статус</b></td>
+        </tr>
+        {% for flight, plane, status in table2.all() %}
+        <tr>
+            {% set dept_airport = table1.filter(id == table1.dept_airport_id).first() %}
+            {% set dest_airport = table1.filter(id == table1.dest_airport_id).first() %}
+            <td>{{ dept_airport.city }}, {{ dept_airport.name }} — {{ dest_airport.city }}, {{ dest_airport.name }}</td>
+            <td>{{ plane.name }}</td>
+            <td>{{ flight.dept_datetime }}</td>
+            <td>{{ flight.dest_datetime }}</td>
+            <td>{{ flight.price }}</td>
+            <td>{{ status.name }}</td>
+        </tr>
+    {% endfor %}</table>
+{% endblock %}

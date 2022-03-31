@@ -1,0 +1,25 @@
+{% extends "base_manager.html" %}
+
+{% block title %}Добавить рейс{% endblock %}
+{% block content %}
+<form method="post">
+    <h2>Добавление рейса в базу данных</h2>
+    <a href="/manager/flights">Все рейсы</a>
+    <div>
+        {{ form.csrf_token() }}
+        {{ form.dept_city.label }}<br>
+        {{ form.dept_city(class="form-control") }}<br>
+        {{ form.dept_airport.label }}<br>
+        {{ form.dept_airport(class="form-control") }}<br>
+        {{ form.dest_city.label }}<br>
+        {{ form.dest_city(class="form-control") }}<br>
+        {{ form.dest_airport.label }}<br>
+        {{ form.dest_airport(class="form-control") }}<br>
+        {{ form.plane.label }}<br>
+        {{ form.plane(class="form-control") }}<br>
+        {{ form.dept_datetime.label }}<br>
+        {{ form.dept_datetime(class="form-control") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

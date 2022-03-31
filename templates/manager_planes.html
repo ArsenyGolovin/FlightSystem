@@ -1,19 +1,23 @@
 {% extends "base_manager.html" %}
 
 {% block content %}
-{% if current_user %}
 <p><h2>Доступные самолёты</h2><p>
 <p><a href="./add_plane">Добавить самолёт</a></p>
     <table border="">
-        <tr><td><b>Самолёт</b></td><td><b>Количество рядов</b></td><td><b>Количество мест</b></td></tr>
+        <tr>
+            <td><b>Самолёт</b></td>
+            <td><b>Количество рядов</b></td>
+            <td><b>Количество мест</b></td>
+            <td><b>Стоимость полёта на 1000 км</b></td>
+            <td><b>Средняя скорость полёта</b></td>
+        </tr>
         {% for plane in table.all() %}
         <tr>
             <td>{{ plane.name }}</td>
             <td>{{ plane.rows_num }}</td>
             <td>{{ plane.columns_num }}</td>
+            <td>{{ plane.flight_cost_per_1000_km }}</td>
+            <td>{{ plane.average_speed }}</td>
         </tr>
     {% endfor %}</table>
-{% else %}
-    Вы не авторизованы. <a href="/registration">Зарегистрируйтесь</a> или <a href="/login">войдите</a> чтобы начать
-{% endif %}
 {% endblock %}
