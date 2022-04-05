@@ -1,0 +1,17 @@
+{% extends "base_manager.html" %}
+
+{% block title %}Добавить самолёт{% endblock %}
+{% block content %}
+<form method="post">
+    <h2>Задержка рейса</h2>
+    <a href="/manager/planes">Все рейсы</a>
+    <div>
+        {{ form.csrf_token() }}
+        {{ form.flight_id.label }}<br>
+        {{ form.flight_id(class="form-control") }}<br>
+        {{ form.time.label }}<br>
+        {{ form.time(class="form-control") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

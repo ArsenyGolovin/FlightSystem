@@ -1,6 +1,8 @@
 import datetime
 import logging
+from math import sin, cos, atan2, pi
 
+import requests
 from flask import Flask, redirect
 from flask import render_template
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
@@ -9,6 +11,7 @@ from data import db_session, airports, planes, flights, statuses
 from data.users import User, check_password_hash
 from forms.add_flight import AddFlightForm
 from forms.add_plane import AddPlaneForm
+from forms.delay_flight import DelayFlightForm
 from forms.user import RegistrationForm, LoginForm
 
 app = Flask(__name__)
@@ -17,8 +20,36 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s: %(message)s', level=0)
 
+YANDEX_GEOCODER_APIKEY = "40d1649f-0493-4b70-98ba-98533de7710b"
 CREATING_FLIGHT_TD = datetime.timedelta(hours=2)
-BOARDING_TD = datetime.timedelta(minutes=40)
+
+
+def calculate_earth_distance(lat1: float, long1: float, lat2: float, long2: float) -> float:
+    EARTH_RADIUS = 6372795
+    sin_lat1, sin_lat2 = sin(lat1 * pi / 180), sin(lat2 * pi / 180)
+    cos_lat1, cos_lat2 = cos(lat1 * pi / 180), cos(lat2 * pi / 180)
+    sin_delta, cos_delta = sin(long2 * pi / 180 - long1 * pi / 180), cos(long2 * pi / 180 - long1 * pi / 180)
+    x = sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * cos_delta
+    y = ((cos_lat2 * sin_delta) ** 2 + (cos_lat1 * sin_lat2 - sin_lat1 * cos_lat2 * cos_delta) ** 2) ** .5
+    print(atan2(y, x) * EARTH_RADIUS)
+    return round(atan2(y, x) * EARTH_RADIUS / 1000)
+
+
+def update_flights_status():
+    ZERO_TD = datetime.timedelta(minutes=0)
+    BOARDING_TD = datetime.timedelta(minutes=40)
+    db_sess = db_session.create_session()
+    now = datetime.datetime.now()
+    status_query = db_sess.query(statuses.Status)
+    for flight, status in db_sess.query(flights.Flight, statuses.Status).filter(
+            flights.Flight.status_id == statuses.Status.id).all():
+        if status.name in ('Отменён', 'Завершён'):
+            continue
+        if flight.dest_datetime > now:
+            flight.status_id = status_query.filter(statuses.Status.name == 'Завершён').first().id
+        elif ZERO_TD < flight.dept_datetime - now < BOARDING_TD:
+            flight.status_id = status_query.filter(statuses.Status.name == 'Посадка').first().id
+    db_sess.commit()
 
 
 @app.route('/')
@@ -130,14 +161,47 @@ def manager_add_plane():
 @app.route('/manager/flights')
 def manager_flights():
     db_sess = db_session.create_session()
+    update_flights_status()
     return render_template('manager_flights.html', table1=db_sess.query(airports.Airport, flights.Flight),
                            table2=db_sess.query(flights.Flight, planes.Plane, statuses.Status).filter(
                                flights.Flight.plane_id == planes.Plane.id,
                                flights.Flight.status_id == statuses.Status.id))
 
 
+@app.route('/manager/delay_flight', methods=['GET', 'POST'])
+def manager_delay_flight():
+    update_flights_status()
+    form = DelayFlightForm()
+
+    if form.validate_on_submit():
+        if datetime.datetime.now() < form.time.data + datetime.timedelta(minutes=15):
+            logging.warning(f'Рейсы: Рейс можно задержать минимум на 15 минут')
+            return render_template('manager_delay_flight.html', form=form,
+                                   message=f'Рейс можно задержать минимум на 15 минут')
+
+        db_sess = db_session.create_session()
+        if not (flight := db_sess.query(flights.Flight).filter(flights.Flight.id == form.flight_id.data).first()):
+            return render_template('manager_delay_flight.html', form=form,
+                                   message=f'Рейс {form.flight_id.data} не найден')
+        status = db_sess.query(statuses.Status).filter(flight.status_id == statuses.Status.id).first().name
+        time = datetime.datetime.strptime(form.time.data, '%H:%M')
+        if status in ( 'По плану', 'Задержан'):
+            flight.dept_datetime += time
+        if status in ('В пути', 'По плану', 'Задержан'):
+            flight.dest_datetime += time
+        else:
+            return render_template('manager_delay_flight.html', form=form,
+                                   message=f'Не удалось задержать рейс {form.flight_id.data}')
+        db_sess.commit()
+        logging.info(f'Рейсы: Рейс {flight.id} задержан на {form.time.data}')
+        return render_template('manager_delay_flight.html', form=form, message='Рейс задержан')
+    logging.warning(f'Рейсы: Форма не прошла валидацию: {form.errors}')
+    return render_template('manager_delay_flight.html', form=form, message='Форма не прошла валидацию')
+
+
 @app.route('/manager/add_flight', methods=['GET', 'POST'])
 def manager_add_flight():
+    update_flights_status()
     form = AddFlightForm()
     if form.validate_on_submit():
         dept_datetime = datetime.datetime.strptime(form.dept_datetime.data, '%d.%m.%Y %H:%M')
@@ -171,10 +235,23 @@ def manager_add_flight():
         flight.dest_airport_id = db_sess.query(airports.Airport).filter(airports.Airport.city == form.dest_city.data,
                                                                         airports.Airport.name == form.dest_airport.data
                                                                         ).first().id
-        flight.plane_id = db_sess.query(planes.Plane).filter(planes.Plane.name == form.plane.data).first().id
+
+        plane = db_sess.query(planes.Plane).filter(planes.Plane.name == form.plane.data).first()
+        flight.plane_id = plane.id
         flight.dept_datetime = dept_datetime
-        flight.dest_datetime = datetime.datetime.now() + datetime.timedelta(hours=3)
-        flight.price = 0
+
+        distance = calculate_earth_distance(
+            *(float(x) for x in requests
+                .get(f'http://geocode-maps.yandex.ru/1.x/?apikey={YANDEX_GEOCODER_APIKEY}&geocode='
+                     f'{form.dept_city.data}, аэропорт {form.dept_airport.data}&format=json').json()["response"]
+            ["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"].split()),
+            *(float(x) for x in requests
+                .get(f'http://geocode-maps.yandex.ru/1.x/?apikey={YANDEX_GEOCODER_APIKEY}&geocode='
+                     f'{form.dest_city.data}, аэропорт {form.dest_airport.data}&format=json').json()["response"]
+            ["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"].split()))
+        flight.dest_datetime = dept_datetime + datetime.timedelta(hours=distance / plane.average_speed)
+        flight.price = plane.flight_cost_per_1000_km // 1000 * distance // plane.rows_num // plane.columns_num
+        flight.status_id = 0
         db_sess.add(flight)
         db_sess.commit()
         logging.info(f'Рейсы: Рейс добавлен')
