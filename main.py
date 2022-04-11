@@ -45,7 +45,7 @@ def update_flights_status():
             flights.Flight.status_id == statuses.Status.id).all():
         if status.name in ('Отменён', 'Завершён'):
             continue
-        if flight.dest_datetime > now:
+        if flight.dest_datetime < now:
             flight.status_id = status_query.filter(statuses.Status.name == 'Завершён').first().id
         elif ZERO_TD < flight.dept_datetime - now < BOARDING_TD:
             flight.status_id = status_query.filter(statuses.Status.name == 'Посадка').first().id
@@ -174,7 +174,8 @@ def manager_delay_flight():
     form = DelayFlightForm()
 
     if form.validate_on_submit():
-        if datetime.datetime.now() < form.time.data + datetime.timedelta(minutes=15):
+        time = datetime.datetime.strptime(str(form.time.data), '%H:%M:%S')
+        if datetime.datetime.now() < time + datetime.timedelta(minutes=15):
             logging.warning(f'Рейсы: Рейс можно задержать минимум на 15 минут')
             return render_template('manager_delay_flight.html', form=form,
                                    message=f'Рейс можно задержать минимум на 15 минут')
@@ -184,14 +185,15 @@ def manager_delay_flight():
             return render_template('manager_delay_flight.html', form=form,
                                    message=f'Рейс {form.flight_id.data} не найден')
         status = db_sess.query(statuses.Status).filter(flight.status_id == statuses.Status.id).first().name
-        time = datetime.datetime.strptime(form.time.data, '%H:%M')
-        if status in ( 'По плану', 'Задержан'):
-            flight.dept_datetime += time
-        if status in ('В пути', 'По плану', 'Задержан'):
-            flight.dest_datetime += time
+        delta = datetime.timedelta(hours=time.hour, minutes=time.minute)
+        if status in ('По плану', 'Задержан', 'Посадка'):
+            flight.dept_datetime += delta
+        if status in ('В пути', 'По плану', 'Задержан', 'Посадка'):
+            flight.dest_datetime += delta
         else:
             return render_template('manager_delay_flight.html', form=form,
                                    message=f'Не удалось задержать рейс {form.flight_id.data}')
+        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'Задержан')
         db_sess.commit()
         logging.info(f'Рейсы: Рейс {flight.id} задержан на {form.time.data}')
         return render_template('manager_delay_flight.html', form=form, message='Рейс задержан')
@@ -204,7 +206,7 @@ def manager_add_flight():
     update_flights_status()
     form = AddFlightForm()
     if form.validate_on_submit():
-        dept_datetime = datetime.datetime.strptime(form.dept_datetime.data, '%d.%m.%Y %H:%M')
+        dept_datetime = form.dept_datetime.data
         if dept_datetime - datetime.datetime.now() < datetime.timedelta(hours=2):
             logging.warning(f'Рейсы: Рейс можно создать минимум за 2 часа до взлёта')
             return render_template('manager_add_flight.html', form=form,
@@ -251,9 +253,10 @@ def manager_add_flight():
             ["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"].split()))
         flight.dest_datetime = dept_datetime + datetime.timedelta(hours=distance / plane.average_speed)
         flight.price = plane.flight_cost_per_1000_km // 1000 * distance // plane.rows_num // plane.columns_num
-        flight.status_id = 0
+        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'В пути')
         db_sess.add(flight)
         db_sess.commit()
+        update_flights_status()
         logging.info(f'Рейсы: Рейс добавлен')
         return render_template('manager_add_flight.html', form=form, message='Рейс добавлен')
     logging.warning(f'Рейсы: Форма не прошла валидацию: {form.errors}')

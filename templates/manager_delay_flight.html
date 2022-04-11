@@ -4,7 +4,7 @@
 {% block content %}
 <form method="post">
     <h2>Задержка рейса</h2>
-    <a href="/manager/planes">Все рейсы</a>
+    <a href="/manager/flights">Все рейсы</a>
     <div>
         {{ form.csrf_token() }}
         {{ form.flight_id.label }}<br>

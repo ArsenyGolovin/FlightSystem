@@ -9,5 +9,5 @@ class AddFlightForm(FlaskForm):
     dest_city = StringField('Город назначения', validators=[DataRequired()])
     dest_airport = StringField('Аэропорт назначения', validators=[DataRequired()])
     plane = StringField('Самолёт', validators=[DataRequired()])
-    dept_datetime = StringField('Дата и время отправления', validators=[DataRequired()])
+    dept_datetime = DateTimeField('Дата и время отправления', validators=[DataRequired()])
     submit = SubmitField('Готово')
