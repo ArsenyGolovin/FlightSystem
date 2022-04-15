@@ -12,6 +12,7 @@ from data.users import User, check_password_hash
 from forms.add_flight import AddFlightForm
 from forms.add_plane import AddPlaneForm
 from forms.delay_flight import DelayFlightForm
+from forms.cancel_flight import CancelFlightForm
 from forms.user import RegistrationForm, LoginForm
 
 app = Flask(__name__)
@@ -172,7 +173,6 @@ def manager_flights():
 def manager_delay_flight():
     update_flights_status()
     form = DelayFlightForm()
-
     if form.validate_on_submit():
         time = datetime.datetime.strptime(str(form.time.data), '%H:%M:%S')
         if datetime.datetime.now() < time + datetime.timedelta(minutes=15):
@@ -193,7 +193,7 @@ def manager_delay_flight():
         else:
             return render_template('manager_delay_flight.html', form=form,
                                    message=f'Не удалось задержать рейс {form.flight_id.data}')
-        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'Задержан')
+        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'Задержан').first().id
         db_sess.commit()
         logging.info(f'Рейсы: Рейс {flight.id} задержан на {form.time.data}')
         return render_template('manager_delay_flight.html', form=form, message='Рейс задержан')
@@ -223,7 +223,7 @@ def manager_add_flight():
                                                       airports.Airport.name == form.dest_airport.data).first():
             logging.warning(f'Рейсы: Аэропорт {form.dest_city.data}, {form.dest_airport.data} не найден')
             return render_template('manager_add_flight.html', form=form,
-                                   message=f'Аэропорт {form.dept_city.data}, {form.dept_airport.data} не найден')
+                                   message=f'Аэропорт {form.dest_city.data}, {form.dest_airport.data} не найден')
 
         if not db_sess.query(planes.Plane).filter(planes.Plane.name == form.plane.data).first():
             logging.warning(f'Рейсы: Самолёт {form.plane.data} не найден')
@@ -237,10 +237,8 @@ def manager_add_flight():
         flight.dest_airport_id = db_sess.query(airports.Airport).filter(airports.Airport.city == form.dest_city.data,
                                                                         airports.Airport.name == form.dest_airport.data
                                                                         ).first().id
-
         plane = db_sess.query(planes.Plane).filter(planes.Plane.name == form.plane.data).first()
         flight.plane_id = plane.id
-        flight.dept_datetime = dept_datetime
 
         distance = calculate_earth_distance(
             *(float(x) for x in requests
@@ -253,7 +251,8 @@ def manager_add_flight():
             ["GeoObjectCollection"]["featureMember"][0]["GeoObject"]["Point"]["pos"].split()))
         flight.dest_datetime = dept_datetime + datetime.timedelta(hours=distance / plane.average_speed)
         flight.price = plane.flight_cost_per_1000_km // 1000 * distance // plane.rows_num // plane.columns_num
-        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'В пути')
+        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'По плану').first().id
+        flight.dept_datetime = dept_datetime
         db_sess.add(flight)
         db_sess.commit()
         update_flights_status()
@@ -261,6 +260,22 @@ def manager_add_flight():
         return render_template('manager_add_flight.html', form=form, message='Рейс добавлен')
     logging.warning(f'Рейсы: Форма не прошла валидацию: {form.errors}')
     return render_template('manager_add_flight.html', form=form, message='Форма не прошла валидацию')
+
+
+@app.route('/manager/cancel_flight', methods=['GET', 'POST'])
+def manager_cancel_flight():
+    form = CancelFlightForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        if not (flight := db_sess.query(flights.Flight).filter(flights.Flight.id == form.flight_id.data).first()):
+            return render_template('manager_cancel_flight.html', form=form,
+                                   message=f'Рейс {form.flight_id.data} не найден')
+        flight.status_id = db_sess.query(statuses.Status).filter(statuses.Status.name == 'Отменён').first().id
+        db_sess.commit()
+        logging.info(f'Рейсы: Рейс {flight.id} отменён')
+        return render_template('manager_cancel_flight.html', form=form, message='Рейс отменён')
+    logging.warning(f'Рейсы: Форма не прошла валидацию: {form.errors}')
+    return render_template('manager_cancel_flight.html', form=form, message='Форма не прошла валидацию')
 
 
 @app.route('/client')

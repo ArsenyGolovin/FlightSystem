@@ -1,12 +1,26 @@
 {% extends "base.html" %}
 
 {% if current_user.is_authenticated %}
-    {% block header %}
-        <a class="navbar navbar-light bg-light" href="/manager/airports">Аэропорты</a>
-        <a class="navbar navbar-light bg-light" href="/manager/planes">Самолёты</a>
-        <a class="navbar navbar-light bg-light" href="/manager/flights">Рейсы</a>
-    {% endblock %}
     {% if current_user.is_manager %}
+        {% block header %}
+            <a class="navbar navbar-light bg-light" href="/manager">Главная</a>
+            <a class="navbar navbar-light bg-light" href="/manager/airports">Аэропорты</a>
+            <div class="dropdown navbar navbar-light bg-light">
+                <a class="dropbtn" href="/manager/planes">Самолёты</a>
+                <div class="dropdown-content navbar navbar-light bg-light">
+                    <a href="/manager/add_plane">Добавить</a>
+                    <a href="/manager/delete_plane">Удалить</a>
+                </div>
+            </div>
+            <div class="dropdown navbar navbar-light bg-light">
+                <a class="dropbtn" href="/manager/flights">Рейсы</a>
+                <div class="dropdown-content navbar navbar-light bg-light">
+                    <a href="/manager/add_flight">Добавить</a>
+                    <a href="/manager/delay_flight">Задержать</a>
+                    <a href="/manager/cancel_flight">Отменить</a>
+                </div>
+            </div>
+        {% endblock %}
         {% block content %}{% endblock %}
     {% else %}
         Вы должны быть зарегистрированы как менеджер. <a href="/logout">Выйти из системы</a>

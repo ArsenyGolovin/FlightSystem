@@ -1,16 +1,14 @@
 {% extends "base_manager.html" %}
 
-{% block title %}Задержать рейс{% endblock %}
+{% block title %}Отменить рейс{% endblock %}
 {% block content %}
 <form method="post">
-    <h2>Задержка рейса</h2>
+    <h2>Отмена рейса</h2>
     <a href="/manager/flights">Все рейсы</a>
     <div>
         {{ form.csrf_token() }}
         {{ form.flight_id.label }}<br>
         {{ form.flight_id(class="form-control") }}<br>
-        {{ form.time.label }}<br>
-        {{ form.time(class="form-control") }}<br>
         {{ form.submit(type="submit", class="btn btn-primary") }}
     </div>
 </form>

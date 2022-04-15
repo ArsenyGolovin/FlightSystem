@@ -12,8 +12,8 @@
 <body>
 <header>
     <nav class="navbar navbar-light bg-light">
-        {% block header %}{% endblock %}
         {% if current_user.is_authenticated %}
+            {% block header %}{% endblock %}
             <div class="dropdown navbar navbar-light bg-light">
                 <a class="dropbtn">{{ current_user.name }}</a>
                 <div class="dropdown-content navbar navbar-light bg-light">
@@ -55,10 +55,17 @@
     }
 
     .dropdown-content a {
+        margin-top: 10px;
+        margin-bottom: 10px;
         display: block;
+
     }
 
     .dropdown:hover .dropdown-content {
         display: block;
+    }
+
+    .dropdown-content a:hover{
+        background-color: dark-gray;
     }
 </style>
