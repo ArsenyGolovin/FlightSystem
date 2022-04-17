@@ -2,7 +2,6 @@
 
 {% block content %}
 <p><h2>Рейсы</h2><p>
-<p><a href="./add_flight">Добавить рейс</a>    <a href="./delay_flight">Задержать рейс</a></p>
     <table border="">
         <tr>
             <td><b>Рейс</b></td>
@@ -12,16 +11,17 @@
             <td><b>Цена билета</b></td>
             <td><b>Статус</b></td>
         </tr>
-        {% for flight, plane, status in table2.all() %}
+        {% for flight, plane, status in table.all() %}
         <tr>
-            {% set dept_airport = table1.filter(id == table1.dept_airport_id).first() %}
-            {% set dest_airport = table1.filter(id == table1.dest_airport_id).first() %}
-            <td>{{ dept_airport.city }}, {{ dept_airport.name }} — {{ dest_airport.city }}, {{ dest_airport.name }}</td>
+            {% set i = loop.index0 %}
+            <td>{{ dept_airports[i].city }}, {{ dept_airports[i].name }} —
+                {{ dest_airports[i].city }}, {{ dest_airports[i].name }}</td>
             <td>{{ plane.name }}</td>
-            <td>{{ flight.dept_datetime }}</td>
-            <td>{{ flight.dest_datetime }}</td>
+            <td>{{ ':'.join(flight.dept_datetime.__str__().split(':')[:-1]) }}</td>
+            <td>{{ ':'.join(flight.dest_datetime.__str__().split(':')[:-1]) }}</td>
             <td>{{ flight.price }}</td>
             <td>{{ status.name }}</td>
         </tr>
-    {% endfor %}</table>
+        {% endfor %}
+    </table>
 {% endblock %}

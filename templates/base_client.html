@@ -2,6 +2,18 @@
 
 {% if current_user.is_authenticated %}
     {% if not current_user.is_manager %}
+        {% block header %}
+            <a class="navbar navbar-light bg-light" href="/client">Главная</a>
+            <a class="navbar navbar-light bg-light" href="/client/airports">Аэропорты</a>
+            <a class="navbar navbar-light bg-light" href="/client/flights">Рейсы</a>
+            <div class="dropdown navbar navbar-light bg-light">
+                <a class="dropbtn" href="/client/tickets">Билеты</a>
+                <div class="dropdown-content navbar navbar-light bg-light">
+                    <a href="/client/buy_ticket">Купить</a>
+                    <a href="/client/return_ticket">Вернуть</a>
+                </div>
+            </div>
+        {% endblock %}
         {% block content %}{% endblock %}
     {% else %}
         Вы должны быть зарегистрированы как клиент. <a href="/logout">Выйти из системы</a>

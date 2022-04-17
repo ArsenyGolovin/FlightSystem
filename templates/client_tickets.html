@@ -1,0 +1,31 @@
+{% extends base_client.html %}
+
+{% block content %}
+<p><h2>Билеты</h2><p>
+    <table border="">
+        <tr>
+            <td><b>№</b></td>
+            <td><b>Рейс</b></td>
+            <td><b>Ряд</b></td>
+            <td><b>Место</b></td>
+            <td><b>Дата и время отправления</b></td>
+            <td><b>Дата и время прибытия</b></td>
+            <td><b>Цена</b></td>
+            <td><b>Статус рейса</b></td>
+        </tr>
+        {% for id, flight_id, row_num, column_num in tickets.all() %}
+        <tr>
+            {% set flight = flights.filter(flights.Flight.id == flight_id).first() %}
+            {% set dept_airport = table1.filter(id == flight.dept_airport_id).first() %}
+            {% set dest_airport = table1.filter(id == flight.dest_airport_id).first() %}
+            <td>{{ dept_airport.city }}, {{ dept_airport.name }} — {{ dest_airport.city }}, {{ dest_airport.name }}</td>
+            <td>{{ row_num }}</td>
+            <td>{{ column_num }}</td>
+            <td>{{ flight.dept_datetime }}</td>
+            <td>{{ flight.dest_datetime }}</td>
+            <td>{{ flight.price }}</td>
+            <td>{{ status.name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

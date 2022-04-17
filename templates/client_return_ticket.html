@@ -1,9 +1,9 @@
 {% extends "base_client.html" %}
 
-{% block title %}Купить билет{% endblock %}
+{% block title %}Вернуть билет{% endblock %}
 {% block content %}
 <form method="post">
-    <h2>Покупка билета</h2>
+    <h2>Возврат билета</h2>
     <a href="/manager/flights">Все рейсы</a>
     <div>
         {{ form.csrf_token() }}
