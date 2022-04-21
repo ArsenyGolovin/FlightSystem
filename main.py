@@ -101,7 +101,7 @@ def login():
             logging.warning(f'Вход: Пользователь с почтой {form.email.data} не найден:')
             return render_template('login.html', title='Вход', form=form,
                                    message='Пользователь с этой почтой не найден')
-        if check_password_hash(user.hashed_password, form.password.data):
+        if not check_password_hash(user.hashed_password, form.password.data):
             logging.warning('Вход: Неверный пароль')
             return render_template('login.html', form=form, message='Неверный пароль')
         login_user(user)
@@ -126,7 +126,12 @@ def manager():
 
 @app.route('/manager/airports')
 def manager_airports():
-    return render_template('airports.html', table=db_session.create_session().query(airports.Airport))
+    return render_template('manager_airports.html', table=db_session.create_session().query(airports.Airport))
+
+
+@app.route('/client/airports')
+def client_airports():
+    return render_template('client_airports.html', table=db_session.create_session().query(airports.Airport))
 
 
 @app.route('/manager/planes')
@@ -286,29 +291,32 @@ def client():
     return render_template('/client.html')
 
 
-@app.route('/client/tickets')
-def client_tickets():
-    db_sess = db_session.create_session()
-    return render_template('/client_tickets.html', tickets=db_session.create_session().query(tickets.Ticket)
-                           .filter(tickets.Ticket.user_id == current_user.id), flights=db_sess.query(flights.Flight))
-
-
-@app.route('/client/buy_ticket')
+@app.route('/client/buy_ticket', methods=['GET', 'POST'])
 def client_buy_ticket():
+    update_flights_status()
     form = BuyTicketForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         if not (flight := db_sess.query(flights.Flight).filter(flights.Flight.id == form.flight_id.data).first()):
             return render_template('client_buy_ticket.html', form=form,
                                    message=f'Рейс {form.flight_id.data} не найден')
-        if form.row > (p := db_sess.query(planes.Plane).filter(planes.Plane.id == flight.plane_id)
-                .first().rows_num) or form.column.data > p.columns_num:
+        if db_sess.query(statuses.Status).filter(statuses.Status.id == flight.status_id
+                                                 ).first().name not in ('По плану', 'Задержан', 'Посадка'):
             return render_template('client_buy_ticket.html', form=form,
-                                   message=f'В самолёте {p.name} {p.rows_num} рядов и {p.columns_num} посадочных мест')
+                                   message=f'Невозможно купить билет на выбранный рейс')
+        if (row := form.row.data) > (p := db_sess.query(planes.Plane).filter(planes.Plane.id == flight.plane_id)
+                .first()).rows_num or (column := form.column.data) > p.columns_num:
+            return render_template('client_buy_ticket.html', form=form,
+                                   message='Максимальное количество рядов: '
+                                           f'{p.rows_num}, посадочных мест: {p.columns_num}')
+        if db_sess.query(tickets.Ticket).filter(tickets.Ticket.row_num == row and
+                                                tickets.Ticket.column_num == column).first():
+            return render_template('client_buy_ticket.html', form=form,
+                                   message=f'Это место уже занято')
         ticket = tickets.Ticket()
         ticket.flight_id = form.flight_id.data
-        ticket.row = form.row.data
-        ticket.column = form.column.data
+        ticket.row_num = row
+        ticket.column_num = column
         ticket.user_id = current_user.id
         db_sess.add(ticket)
         db_sess.commit()
@@ -317,14 +325,17 @@ def client_buy_ticket():
     return render_template('client_buy_ticket.html', form=form, message='Форма не прошла валидацию')
 
 
-@app.route('/client/return_ticket')
+@app.route('/client/return_ticket', methods=['GET', 'POST'])
 def client_return_ticket():
     form = ReturnTicketForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        if not db_sess.query(flights.Flight).filter(flights.Flight.id == form.flight_id.data).first():
+        if not db_sess.query(tickets.Ticket).filter(tickets.Ticket.id == form.id.data).first():
             return render_template('client_return_ticket.html', form=form,
-                                   message=f'Рейс {form.flight_id.data} не найден')
+                                   message=f'Билет {form.id.data} не найден')
+        if not db_sess.query(flights.Flight).filter(flights.Flight.id == form.id.data).first():
+            return render_template('client_return_ticket.html', form=form,
+                                   message=f'Рейс {form.id.data} не найден')
         if not db_sess.query(tickets.Ticket).filter(tickets.Ticket.user_id == db_sess.query(users.User)
                 .filter(users.User.email == current_user.email).first().id):
             return render_template('manager_cancel_flight.html', form=form,
@@ -335,6 +346,34 @@ def client_return_ticket():
         return render_template('client_return_ticket.html', form=form, message='Билет куплен')
     logging.warning(f'Билеты: Форма не прошла валидацию: {form.errors}')
     return render_template('client_return_ticket.html', form=form, message='Форма не прошла валидацию')
+
+
+@app.route('/client/tickets')
+def client_tickets():
+    db_sess = db_session.create_session()
+    return render_template('/client_tickets.html', tickets=db_session.create_session().query(tickets.Ticket)
+                           .filter(tickets.Ticket.user_id == current_user.id),
+                           dept_airports=db_sess.query(airports.Airport)
+                           .join(flights.Flight, flights.Flight.dept_airport_id == airports.Airport.id),
+                           dest_airports=db_sess.query(airports.Airport)
+                           .join(flights.Flight, flights.Flight.dest_airport_id == airports.Airport.id),
+                           fs=db_sess.query(flights.Flight), planes=db_sess.query(planes.Plane),
+                           statuses=db_sess.query(statuses.Status), ff=flights.Flight)
+
+
+@app.route('/client/flights')
+def client_flights():
+    update_flights_status()
+    db_sess = db_session.create_session()
+    update_flights_status()
+    return render_template('client_flights.html',
+                           dept_airports=db_sess.query(airports.Airport)
+                           .join(flights.Flight, flights.Flight.dept_airport_id == airports.Airport.id),
+                           dest_airports=db_sess.query(airports.Airport)
+                           .join(flights.Flight, flights.Flight.dest_airport_id == airports.Airport.id),
+                           table=db_sess.query(flights.Flight, planes.Plane, statuses.Status).filter(
+                               flights.Flight.plane_id == planes.Plane.id,
+                               flights.Flight.status_id == statuses.Status.id))
 
 
 if __name__ == '__main__':

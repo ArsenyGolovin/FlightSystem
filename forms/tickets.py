@@ -11,5 +11,5 @@ class BuyTicketForm(FlaskForm):
 
 
 class ReturnTicketForm(FlaskForm):
-    flight_id = IntegerField('№ рейса', validators=[DataRequired(), NumberRange(1)])
+    id = IntegerField('№ билета', validators=[DataRequired(), NumberRange(1)])
     submit = SubmitField('Готово')
