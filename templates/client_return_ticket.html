@@ -7,12 +7,8 @@
     <a href="/manager/flights">Все рейсы</a>
     <div>
         {{ form.csrf_token() }}
-        {{ form.flight_id.label }}<br>
-        {{ form.flight_id(class="form-control") }}<br>
-        {{ form.row.label }}<br>
-        {{ form.row(class="form-control") }}<br>
-        {{ form.column.label }}<br>
-        {{ form.column(class="form-control") }}<br>
+        {{ form.id.label }}<br>
+        {{ form.id(class="form-control") }}<br>
         {{ form.submit(type="submit", class="btn btn-primary") }}
     </div>
 </form>

@@ -333,17 +333,12 @@ def client_return_ticket():
         if not db_sess.query(tickets.Ticket).filter(tickets.Ticket.id == form.id.data).first():
             return render_template('client_return_ticket.html', form=form,
                                    message=f'Билет {form.id.data} не найден')
-        if not db_sess.query(flights.Flight).filter(flights.Flight.id == form.id.data).first():
+        if db_sess.query(tickets.Ticket).filter(tickets.Ticket.id == form.id.data).first().user_id != current_user.id:
             return render_template('client_return_ticket.html', form=form,
-                                   message=f'Рейс {form.id.data} не найден')
-        if not db_sess.query(tickets.Ticket).filter(tickets.Ticket.user_id == db_sess.query(users.User)
-                .filter(users.User.email == current_user.email).first().id):
-            return render_template('manager_cancel_flight.html', form=form,
-                                   message=f'В самолёте {p.name} {p.rows_num} рядов и {p.columns_num} посадочных мест')
-        db_sess.delete(tickets.Ticket).where(tickets.Ticket.user_id == db_sess.query(users.User)
-                                             .filter(users.User.email == current_user.email).first().id)
+                                   message=f'Билет {form.id.data} принадлежит другому пользователю')
+        db_sess.delete(tickets.Ticket).where(tickets.Ticket.id == form.id.data)
         db_sess.commit()
-        return render_template('client_return_ticket.html', form=form, message='Билет куплен')
+        return render_template('client_return_ticket.html', form=form, message='Возврат оформлен')
     logging.warning(f'Билеты: Форма не прошла валидацию: {form.errors}')
     return render_template('client_return_ticket.html', form=form, message='Форма не прошла валидацию')
 
