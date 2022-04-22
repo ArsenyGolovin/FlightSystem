@@ -215,10 +215,14 @@ def manager_add_flight():
     form = AddFlightForm()
     if form.validate_on_submit():
         dept_datetime = form.dept_datetime.data
-        if dept_datetime - datetime.datetime.now() < datetime.timedelta(hours=2):
+        '''if dept_datetime - datetime.datetime.now() < datetime.timedelta(hours=2):
             logging.warning(f'Рейсы: Рейс можно создать минимум за 2 часа до взлёта')
             return render_template('manager_add_flight.html', form=form,
-                                   message='Рейс можно создать минимум за 2 часа до взлёта')
+                                   message='Рейс можно создать минимум за 2 часа до взлёта')'''
+
+        if form.dept_city.data == form.dest_city.data:
+            return render_template('manager_add_flight.html', form=form,
+                                   message=f'Аэропорты должны находиться в разных городах')
 
         db_sess = db_session.create_session()
         if not db_sess.query(airports.Airport).filter(airports.Airport.city == form.dept_city.data,
