@@ -7,10 +7,10 @@ from flask import Flask, redirect
 from flask import render_template
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
-from data import db_session, airports, planes, flights, statuses, tickets, users
+from data import db_session, airports, planes, flights, statuses, tickets
 from data.users import User, check_password_hash
-from forms.add_flight import AddFlightForm, DelayFlightForm, CancelFlightForm
-from forms.add_plane import AddPlaneForm
+from forms.flights import AddFlightForm, DelayFlightForm, CancelFlightForm
+from forms.planes import AddPlaneForm, DeletePlaneForm
 from forms.tickets import BuyTicketForm, ReturnTicketForm
 from forms.user import RegistrationForm, LoginForm
 
@@ -142,6 +142,7 @@ def manager_planes():
 @app.route('/manager/add_plane', methods=['GET', 'POST'])
 def manager_add_plane():
     form = AddPlaneForm()
+    name = form.name.data.title()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         if db_sess.query(planes.Plane).filter(planes.Plane.name == form.name.data).first():
@@ -149,7 +150,7 @@ def manager_add_plane():
             return render_template('manager_add_plane.html', form=form,
                                    message=f'Самолёт {form.name.data} уже в списке')
         plane = planes.Plane()
-        plane.name = form.name.data
+        plane.name = name
         plane.rows_num = form.rows_num.data
         plane.columns_num = form.columns_num.data
         plane.flight_cost_per_1000_km = form.flight_cost_per_1000_km.data
@@ -163,7 +164,7 @@ def manager_add_plane():
     return render_template('manager_add_plane.html', form=form, message='Форма не прошла валидацию')
 
 
-@app.route('/manager/flights')
+@app.route('/manager/flights', methods=['GET', 'POST'])
 def manager_flights():
     db_sess = db_session.create_session()
     update_flights_status()
@@ -215,10 +216,6 @@ def manager_add_flight():
     form = AddFlightForm()
     if form.validate_on_submit():
         dept_datetime = form.dept_datetime.data
-        '''if dept_datetime - datetime.datetime.now() < datetime.timedelta(hours=2):
-            logging.warning(f'Рейсы: Рейс можно создать минимум за 2 часа до взлёта')
-            return render_template('manager_add_flight.html', form=form,
-                                   message='Рейс можно создать минимум за 2 часа до взлёта')'''
 
         if form.dept_city.data == form.dest_city.data:
             return render_template('manager_add_flight.html', form=form,
@@ -288,6 +285,27 @@ def manager_cancel_flight():
         return render_template('manager_cancel_flight.html', form=form, message='Рейс отменён')
     logging.warning(f'Рейсы: Форма не прошла валидацию: {form.errors}')
     return render_template('manager_cancel_flight.html', form=form, message='Форма не прошла валидацию')
+
+
+@app.route('/manager/delete_plane', methods=['GET', 'POST'])
+def manager_delete_plane():
+    update_flights_status()
+    form = DeletePlaneForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        name = form.name.data
+        if not (p := db_sess.query(planes.Plane).filter(planes.Plane.name == name).first()):
+            return render_template('manager_delete_plane.html', form=form,
+                                   message=f'Самолёт {form.name.data} не найден')
+        if db_sess.query(flights.Flight, planes.Plane).filter(flights.Flight.status_id not in (3, 6) and
+                                                              flights.Flight.plane_id == p.id).first():
+            return render_template('manager_delete_plane.html', form=form,
+                                   message=f'Самолёт {form.name.data} ещё используется')
+        db_sess.delete(planes.Plane).where(planes.Plane.name == name)
+        db_sess.commit()
+        return render_template('manager_delete_plane.html', form=form, message='Самолёт удалён')
+    logging.warning(f'Билеты: Форма не прошла валидацию: {form.errors}')
+    return render_template('manager_delete_plane.html', form=form, message='Форма не прошла валидацию')
 
 
 @app.route('/client')

@@ -10,3 +10,8 @@ class AddPlaneForm(FlaskForm):
     flight_cost_per_1000_km = IntegerField('Стоимость полёта на 1000 км', validators=[DataRequired(), NumberRange(0)])
     average_speed = IntegerField('Средняя скорость полёта, км/ч', validators=[DataRequired(), NumberRange(1)])
     submit = SubmitField('Готово')
+
+
+class DeletePlaneForm(FlaskForm):
+    name = StringField('Название', validators=[DataRequired()])
+    submit = SubmitField('Готово')

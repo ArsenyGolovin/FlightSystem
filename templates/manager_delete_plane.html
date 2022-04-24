@@ -1,0 +1,15 @@
+{% extends "base_manager.html" %}
+
+{% block title %}Удалить самолёт{% endblock %}
+{% block content %}
+<form method="post">
+    <h2>Удаление самолёта</h2>
+    <a href="/manager/flights">Все рейсы</a>
+    <div>
+        {{ form.csrf_token() }}
+        {{ form.name.label }}<br>
+        {{ form.name(class="form-control") }}<br>
+        {{ form.submit(type="submit", class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}
