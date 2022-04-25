@@ -1,5 +1,6 @@
 {% extends "base_client.html" %}
 
 {% block content %}
-{{ current_user.name, current_user.email, current_user.created_date }}
+Вы авторизовались как {{ current_user.name }}<br>
+<img src="{{ url_for('static', filename='client.jfif') }}">
 {% endblock %}

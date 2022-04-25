@@ -4,7 +4,6 @@
 {% block content %}
 <form method="post">
     <h2>Возврат билета</h2>
-    <a href="/manager/flights">Все рейсы</a>
     <div>
         {{ form.csrf_token() }}
         {{ form.id.label }}<br>

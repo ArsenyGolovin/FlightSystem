@@ -1,10 +1,11 @@
 import datetime
 import logging
+import sqlite3
 from math import sin, cos, atan2, pi
 
 import requests
 from flask import Flask, redirect
-from flask import render_template
+from flask import render_template, url_for
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
 from data import db_session, airports, planes, flights, statuses, tickets
@@ -16,6 +17,8 @@ from forms.user import RegistrationForm, LoginForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+con = sqlite3.connect('db/flights.db', check_same_thread=False)
+cur = con.cursor()
 login_manager = LoginManager()
 login_manager.init_app(app)
 logging.basicConfig(format='%(asctime)s %(name)s %(levelname)s: %(message)s', level=0)
@@ -142,8 +145,8 @@ def manager_planes():
 @app.route('/manager/add_plane', methods=['GET', 'POST'])
 def manager_add_plane():
     form = AddPlaneForm()
-    name = form.name.data.title()
     if form.validate_on_submit():
+        name = form.name.data
         db_sess = db_session.create_session()
         if db_sess.query(planes.Plane).filter(planes.Plane.name == form.name.data).first():
             logging.warning(f'Самолёты: самолёт {form.name.data} уже в базе данных')
@@ -301,8 +304,11 @@ def manager_delete_plane():
                                                               flights.Flight.plane_id == p.id).first():
             return render_template('manager_delete_plane.html', form=form,
                                    message=f'Самолёт {form.name.data} ещё используется')
-        db_sess.delete(planes.Plane).where(planes.Plane.name == name)
-        db_sess.commit()
+        db_sess.close()
+        cur.execute(f'DELETE FROM Planes WHERE name = "{name}"')
+        con.commit()
+        '''db_sess.delete(planes.Plane).where(planes.Plane.name == name)
+        db_sess.commit()'''
         return render_template('manager_delete_plane.html', form=form, message='Самолёт удалён')
     logging.warning(f'Билеты: Форма не прошла валидацию: {form.errors}')
     return render_template('manager_delete_plane.html', form=form, message='Форма не прошла валидацию')
@@ -331,7 +337,7 @@ def client_buy_ticket():
             return render_template('client_buy_ticket.html', form=form,
                                    message='Максимальное количество рядов: '
                                            f'{p.rows_num}, посадочных мест: {p.columns_num}')
-        if db_sess.query(tickets.Ticket).filter(tickets.Ticket.row_num == row and
+        if db_sess.query(tickets.Ticket).filter(tickets.Ticket.row_num == row).filter(
                                                 tickets.Ticket.column_num == column).first():
             return render_template('client_buy_ticket.html', form=form,
                                    message=f'Это место уже занято')
@@ -358,8 +364,11 @@ def client_return_ticket():
         if db_sess.query(tickets.Ticket).filter(tickets.Ticket.id == form.id.data).first().user_id != current_user.id:
             return render_template('client_return_ticket.html', form=form,
                                    message=f'Билет {form.id.data} принадлежит другому пользователю')
-        db_sess.delete(tickets.Ticket).where(tickets.Ticket.id == form.id.data)
-        db_sess.commit()
+        db_sess.close()
+        cur.execute(f'DELETE FROM Tickets WHERE id = {form.id.data}')
+        con.commit()
+        '''db_sess.delete(tickets.Ticket).where(tickets.Ticket.id == form.id.data)
+        db_sess.commit()'''
         return render_template('client_return_ticket.html', form=form, message='Возврат оформлен')
     logging.warning(f'Билеты: Форма не прошла валидацию: {form.errors}')
     return render_template('client_return_ticket.html', form=form, message='Форма не прошла валидацию')
