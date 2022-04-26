@@ -5,7 +5,7 @@ from math import sin, cos, atan2, pi
 
 import requests
 from flask import Flask, redirect
-from flask import render_template, url_for
+from flask import render_template
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 
 from data import db_session, airports, planes, flights, statuses, tickets
@@ -338,7 +338,7 @@ def client_buy_ticket():
                                    message='Максимальное количество рядов: '
                                            f'{p.rows_num}, посадочных мест: {p.columns_num}')
         if db_sess.query(tickets.Ticket).filter(tickets.Ticket.row_num == row).filter(
-                                                tickets.Ticket.column_num == column).first():
+                tickets.Ticket.column_num == column).first():
             return render_template('client_buy_ticket.html', form=form,
                                    message=f'Это место уже занято')
         ticket = tickets.Ticket()
@@ -379,6 +379,7 @@ def client_tickets():
     db_sess = db_session.create_session()
     return render_template('/client_tickets.html', tickets=db_session.create_session().query(tickets.Ticket)
                            .filter(tickets.Ticket.user_id == current_user.id),
+                           airports=db_sess.query(airports.Airport).all(),
                            dept_airports=db_sess.query(airports.Airport)
                            .join(flights.Flight, flights.Flight.dept_airport_id == airports.Airport.id),
                            dest_airports=db_sess.query(airports.Airport)

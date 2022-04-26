@@ -16,16 +16,15 @@
         {% for t in tickets.all() %}
         <tr>
             {% set flight = fs.filter(ff.id == t.flight_id).first() %}
-            {% set i = loop.index0 %}
             <td>{{ t.id }}</td>
-            <td>{{ dept_airports[i].city }}, {{ dept_airports[i].name }} —
-                {{ dest_airports[i].city }}, {{ dest_airports[i].name }}</td>
+            <td>{{ airports[flight.dept_airport_id-1].city }}, {{ airports[flight.dept_airport_id-1].name }} —
+                {{ airports[flight.dest_airport_id-1].city }}, {{ airports[flight.dest_airport_id-1].name }}</td>
             <td>{{ t.row_num }}</td>
             <td>{{ t.column_num }}</td>
             <td>{{ ':'.join(flight.dept_datetime.__str__().split(':')[:-1]) }}</td>
             <td>{{ ':'.join(flight.dest_datetime.__str__().split(':')[:-1]) }}</td>
             <td>{{ flight.price }}</td>
-            <td>{{ statuses[flight.status_id].name }}</td>
+            <td>{{ statuses[flight.status_id - 1].name }}</td>
         </tr>
         {% endfor %}
     </table>

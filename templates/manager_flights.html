@@ -5,6 +5,7 @@
 <p><h2>Рейсы</h2><p>
     <table border="">
         <tr>
+            <td><b>№</b></td>
             <td><b>Рейс</b></td>
             <td><b>Самолёт</b></td>
             <td><b>Дата и время отправления</b></td>
@@ -15,6 +16,7 @@
         {% for flight, plane, status in table.all() %}
         <tr>
             {% set i = loop.index0 %}
+            <td>{{ flight.id }}</td>
             <td>{{ dept_airports[i].city }}, {{ dept_airports[i].name }} —
                 {{ dest_airports[i].city }}, {{ dest_airports[i].name }}</td>
             <td>{{ plane.name }}</td>
